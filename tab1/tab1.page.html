@@ -1,0 +1,285 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title class="header-title">🍳 Recipe Master ✨</ion-title>
+
+    <!-- Login/Signup buttons -->
+    <ion-buttons slot="start" *ngIf="!currentUser">
+      <ion-button (click)="openLoginModal()">Login</ion-button>
+      <ion-button (click)="openSignupModal()">Sign Up</ion-button>
+    </ion-buttons>
+
+    <!-- Greeting and Logout if logged in -->
+    <ion-buttons slot="start" *ngIf="currentUser">
+      <ion-label>👋 {{ currentUser }}</ion-label>
+      <ion-button color="medium" (click)="logout()">Logout</ion-button>
+    </ion-buttons>
+
+    <!-- Add Recipe Button -->
+    <ion-buttons slot="end" *ngIf="currentUser">
+      <ion-button (click)="openAddSidebar()">➕ Add Recipe</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="content">
+
+  <!-- Marquee -->
+  <div class="marquee">
+    🥗 Healthy! 🍲 Quick! 🍝 Delicious! 🍪 Sweet! 🍳 Fun Recipes! 🌸
+  </div>
+
+  <!-- Category Filter -->
+  <ion-toolbar color="light" class="category-toolbar">
+    <ion-segment [(ngModel)]="selectedCategory">
+      <ion-segment-button value="All">All</ion-segment-button>
+      <ion-segment-button value="Breakfast">Breakfast</ion-segment-button>
+      <ion-segment-button value="Lunch">Lunch</ion-segment-button>
+      <ion-segment-button value="Dinner">Dinner</ion-segment-button>
+      <ion-segment-button value="Dessert">Dessert</ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+
+  <!-- Search -->
+  <ion-toolbar color="light">
+    <ion-searchbar [(ngModel)]="searchText" placeholder="Search Recipes..."></ion-searchbar>
+  </ion-toolbar>
+
+  <!-- Favorites Toggle -->
+  <ion-toolbar color="light">
+    <ion-item lines="none">
+      <ion-label>Show Favorites Only</ion-label>
+      <ion-toggle [(ngModel)]="showOnlyFavorites"></ion-toggle>
+    </ion-item>
+  </ion-toolbar>
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner">
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSL7MdwAxYfS5CNEtuQeGSwbV-LMwgHT2ZAng&s" 
+         alt="Welcome to Recipe Master" />
+    <div class="welcome-text">
+      <h2>Welcome to 🍳 Recipe Master ✨</h2>
+      <p>Discover, cook, and enjoy delicious recipes curated just for you!</p>
+    </div>
+  </div>
+
+  <!-- Recipe Grid -->
+  <ion-grid>
+    <ion-row>
+      <ion-col size="12" size-md="6" size-lg="2" *ngFor="let recipe of filteredRecipes()">
+        <ion-card class="recipe-card">
+          <ion-img [src]="recipe.image || 'assets/default-recipe.jpg'" alt="{{recipe.name}}"></ion-img>
+          <ion-card-header>
+            <ion-card-title>{{ recipe.name }}</ion-card-title>
+            <ion-card-subtitle>{{ recipe.category }}</ion-card-subtitle>
+          </ion-card-header>
+          <ion-card-content>
+            <p>{{ recipe.description }}</p>
+
+            <!-- View -->
+            <ion-button fill="solid" color="primary" size="small" (click)="openRecipe(recipe)">
+              👀 View
+            </ion-button>
+
+            <!-- Favorite -->
+            <ion-button fill="outline" color="danger" size="small" 
+                        (click)="toggleFavorite(recipe); $event.stopPropagation()">
+              {{ recipe.isFavorite ? '❤️ Favorited' : '🤍 Favorite' }}
+            </ion-button>
+
+            <!-- Edit & Delete (only show if logged in) -->
+            <div *ngIf="currentUser" style="margin-top: 8px;">
+              <ion-button fill="outline" color="warning" size="small"
+                          (click)="editRecipe(recipe); $event.stopPropagation()">
+                ✏️ Edit
+              </ion-button>
+              <ion-button fill="outline" color="dark" size="small"
+                          (click)="deleteRecipe(recipe); $event.stopPropagation()">
+                🗑️ Delete
+              </ion-button>
+            </div>
+
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+
+  <!-- Recipe View Modal -->
+  <ion-modal [isOpen]="selectedRecipe !== null" (didDismiss)="closeRecipe()">
+    <ng-template [ngIf]="selectedRecipe">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ selectedRecipe?.name }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeRecipe()">Close</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-img [src]="selectedRecipe?.image || 'assets/default-recipe.jpg'" class="modal-image"></ion-img>
+
+        <h2>Ingredients</h2>
+        <ion-list>
+          <ion-item *ngFor="let ing of selectedRecipe?.ingredients">{{ ing }}</ion-item>
+        </ion-list>
+
+        <h2>Steps</h2>
+        <ol>
+          <li *ngFor="let step of selectedRecipe?.steps">{{ step }}</li>
+        </ol>
+
+        <ion-button expand="block" color="success" (click)="downloadRecipe(selectedRecipe)">
+          ⬇️ Download Recipe
+        </ion-button>
+
+        <!-- Edit & Delete inside modal -->
+        <div *ngIf="currentUser" style="margin-top: 8px;">
+          <ion-button expand="block" color="warning" (click)="editRecipe(selectedRecipe)">
+            ✏️ Edit Recipe
+          </ion-button>
+          <ion-button expand="block" color="danger" (click)="deleteRecipe(selectedRecipe)">
+            🗑️ Delete Recipe
+          </ion-button>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- Add/Edit Recipe Modal -->
+  <ion-modal [isOpen]="showAddSidebar">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ editingRecipe ? 'Edit Recipe' : 'Add New Recipe' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeAddSidebar()">Close</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-item>
+          <ion-label position="stacked">Name</ion-label>
+          <ion-input [(ngModel)]="newRecipe.name"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Description</ion-label>
+          <ion-textarea [(ngModel)]="newRecipe.description"></ion-textarea>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Category</ion-label>
+          <ion-select [(ngModel)]="newRecipe.category">
+            <ion-select-option value="Breakfast">Breakfast</ion-select-option>
+            <ion-select-option value="Lunch">Lunch</ion-select-option>
+            <ion-select-option value="Dinner">Dinner</ion-select-option>
+            <ion-select-option value="Dessert">Dessert</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Ingredients (comma separated)</ion-label>
+          <ion-input [(ngModel)]="newRecipe.ingredients"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Steps (comma separated)</ion-label>
+          <ion-input [(ngModel)]="newRecipe.steps"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Image URL (optional)</ion-label>
+          <ion-input [(ngModel)]="newRecipe.image"></ion-input>
+        </ion-item>
+
+        <ion-button expand="full" color="primary" (click)="addOrUpdateRecipe()">
+          {{ editingRecipe ? '💾 Save Changes' : '➕ Add Recipe' }}
+        </ion-button>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- Login Modal -->
+  <ion-modal [isOpen]="showLoginModal">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Login</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeLoginModal()">Close</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-item>
+          <ion-label position="stacked">Email</ion-label>
+          <ion-input type="email" [(ngModel)]="loginData.email"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Password</ion-label>
+          <ion-input type="password" [(ngModel)]="loginData.password"></ion-input>
+        </ion-item>
+        <ion-button expand="full" color="primary" (click)="login()">Login</ion-button>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- Signup Modal -->
+  <ion-modal [isOpen]="showSignupModal">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Sign Up</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeSignupModal()">Close</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-item>
+          <ion-label position="stacked">Name</ion-label>
+          <ion-input [(ngModel)]="signupData.name"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Email</ion-label>
+          <ion-input type="email" [(ngModel)]="signupData.email"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Password</ion-label>
+          <ion-input type="password" [(ngModel)]="signupData.password"></ion-input>
+        </ion-item>
+        <ion-button expand="full" color="primary" (click)="signup()">Sign Up</ion-button>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>About Us</h4>
+        <p>Delicious recipes, easy to follow, curated with love.</p>
+        <p>
+          <a href="https://www.instagram.com/" target="_blank">Instagram</a> | 
+          <a href="https://www.youtube.com/" target="_blank">YouTube</a>
+        </p>
+      </div>
+      <div class="footer-section">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="#">Home</a></li>
+          <li><a href="#">Recipes</a></li>
+          <li><a href="#">Favorites</a></li>
+          <li><a href="#">Add Recipe</a></li>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Help</a></li>
+          <li><a href="mailto:support@bakeryapp.com">Message Us</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Contact</h4>
+        <p>Email</p>
+        <p>Phone: +91 98765 43210</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 Recipe Master. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+</ion-content>
