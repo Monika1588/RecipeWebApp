@@ -14,8 +14,8 @@ Core Features:<br>
 •	Favorites:	Mark and view favorite recipes for quick access.<br>
 •	Add/Edit Recipes:	Add new recipes or update existing ones with custom details.<br>
 •	Review & Rating System:	Users can share feedback and rate recipes.<br>
-•	Responsive Design:	Optimized layout ensuring smooth performance on mobile, tablet, and desktop.<br>
-•	Data Management:	Recipes stored and fetched from JSON or API (extensible for backend integration).<br><br>
+•	Responsive Design:	Optimized layout ensuring smooth performance on mobile, tablet, and desktop.<br><br>
+
 
 
 Technology Stack:<br>
@@ -29,7 +29,6 @@ Technology Stack:<br>
 
 
 System Architecture:<br>
-
 •	Frontend: Built using Angular and Ionic for modular design and reusability.<br>
 •	Routing: Managed via Angular Router for seamless page navigation.<br>
 •	UI Components: Developed using Ionic elements for a native-like experience.<br><br>
@@ -39,7 +38,6 @@ Learning Outcomes:<br>
 Through this project, I enhanced my understanding of:<br>
 •	Angular component-based development and service integration.<br>
 •	Ionic UI components for responsive mobile-first design.<br>
-•	Data handling and routing in a structured single-page application.<br>
 •	User authentication and session management in a web context.<br>
 •	Clean code practices and modular architecture.<br><br>
 
